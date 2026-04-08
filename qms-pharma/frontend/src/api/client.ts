@@ -46,7 +46,12 @@ apiClient.interceptors.response.use(
         setAuthToken(null);
         pendingQueue.forEach((cb) => cb(null));
         pendingQueue = [];
-        window.location.href = '/login';
+        const usesHashRouter = window.location.hash.startsWith('#/');
+        if (usesHashRouter) {
+          window.location.hash = '#/login';
+        } else {
+          window.location.href = '/login';
+        }
       } finally {
         isRefreshing = false;
       }
