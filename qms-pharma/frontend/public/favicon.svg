@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="QMS Pharma">
+  <rect width="64" height="64" rx="12" fill="#0f172a"/>
+  <path d="M16 45V19h10.5c4.6 0 8.3 3.4 8.3 7.8s-3.7 7.8-8.3 7.8H22V45h-6zm6-15.5h4.3c2 0 3.5-1.2 3.5-2.8s-1.5-2.8-3.5-2.8H22v5.6z" fill="#38bdf8"/>
+  <circle cx="45" cy="24" r="7" fill="#22c55e"/>
+  <path d="M39 45l5.2-9.2L49.4 45H39z" fill="#22c55e"/>
+</svg>
