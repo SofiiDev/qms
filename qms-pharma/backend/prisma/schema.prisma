@@ -1,0 +1,227 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  QUALITY_MANAGER
+  QUALITY_ANALYST
+  VIEWER
+}
+
+enum ClasificacionDesvio {
+  CRITICO
+  MAYOR
+  MENOR
+}
+
+enum EstadoDesvio {
+  ABIERTO
+  EN_INVESTIGACION
+  CERRADO
+}
+
+enum TipoCambio {
+  MAYOR
+  MENOR
+  CRITICO
+}
+
+enum EstadoCambio {
+  BORRADOR
+  EVALUACION
+  APROBADO
+  RECHAZADO
+  IMPLEMENTADO
+}
+
+enum TipoDocumento {
+  URS
+  DQ
+  IQ
+  OQ
+  PQ
+}
+
+enum EstadoDocumento {
+  BORRADOR
+  REVISION
+  APROBADO
+}
+
+enum TipoCapa {
+  CORRECTIVA
+  PREVENTIVA
+}
+
+enum OrigenCapa {
+  DESVIO
+  CAMBIO
+  AUDITORIA
+  RIESGO
+}
+
+model User {
+  id             String         @id @default(cuid())
+  email          String         @unique
+  passwordHash   String
+  fullName       String
+  role           Role
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  refreshTokens  RefreshToken[]
+  auditLogs      AuditLog[]
+  desviosCreados Desvio[]       @relation("DesviosCreados")
+  cambiosCreados Cambio[]       @relation("CambiosCreados")
+  riesgosCreados Riesgo[]       @relation("RiesgosCreados")
+  docsCreados    Documento[]    @relation("DocsCreados")
+  capasCreadas   Capa[]         @relation("CapasCreadas")
+}
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  tokenHash  String
+  userId     String
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime @default(now())
+  ipAddress  String?
+  userAgent  String?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  module     String
+  recordId   String?
+  oldValue   Json?
+  newValue   Json?
+  ipAddress  String?
+  userAgent  String?
+  timestamp  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@index([module, timestamp])
+}
+
+model Desvio {
+  id              String               @id @default(cuid())
+  codigo          String               @unique
+  descripcion     String
+  clasificacion   ClasificacionDesvio
+  producto        String
+  lote            String
+  causaRaiz       String?
+  estado          EstadoDesvio         @default(ABIERTO)
+  responsableId   String?
+  fechaDeteccion  DateTime
+  fechaCierre     DateTime?
+  capaId          String?
+  createdById     String
+  deletedAt       DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  createdBy       User                 @relation("DesviosCreados", fields: [createdById], references: [id])
+
+  @@index([estado, clasificacion, fechaDeteccion])
+}
+
+model Cambio {
+  id               String      @id @default(cuid())
+  codigo           String      @unique
+  descripcion      String
+  tipo             TipoCambio
+  justificacion    String
+  impactoGmp       String
+  sistemasAfectados Json
+  estado           EstadoCambio @default(BORRADOR)
+  aprobadoPor      String?
+  fechaAprobacion  DateTime?
+  planRevalidacion String?
+  createdById      String
+  deletedAt        DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  createdBy        User        @relation("CambiosCreados", fields: [createdById], references: [id])
+
+  @@index([estado, tipo])
+}
+
+model Riesgo {
+  id                    String   @id @default(cuid())
+  codigo                String   @unique
+  proceso               String
+  modoFalla             String
+  efecto                String
+  causa                 String
+  severidad             Int
+  ocurrencia            Int
+  detectabilidad        Int
+  npr                   Int
+  controlesActuales     String
+  accionesRecomendadas  String
+  responsable           String
+  estado                String
+  createdById           String
+  deletedAt             DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  createdBy             User     @relation("RiesgosCreados", fields: [createdById], references: [id])
+
+  @@index([estado, npr])
+}
+
+model Documento {
+  id               String          @id @default(cuid())
+  codigo           String          @unique
+  tipo             TipoDocumento
+  titulo           String
+  sistema          String
+  categoriaGamp    Int
+  revision         String
+  estado           EstadoDocumento @default(BORRADOR)
+  contenido        Json
+  parentDocumentoId String?
+  aprobadoPor      String?
+  fechaAprobacion  DateTime?
+  createdById      String
+  deletedAt        DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  createdBy        User            @relation("DocsCreados", fields: [createdById], references: [id])
+  parentDocumento  Documento?      @relation("DocumentoChain", fields: [parentDocumentoId], references: [id])
+  children         Documento[]     @relation("DocumentoChain")
+
+  @@index([sistema, tipo])
+}
+
+model Capa {
+  id              String    @id @default(cuid())
+  codigo          String    @unique
+  tipo            TipoCapa
+  descripcion     String
+  origen          OrigenCapa
+  origenId        String
+  responsable     String
+  fechaCompromiso DateTime
+  fechaCierre     DateTime?
+  efectividad     String?
+  estado          String
+  createdById     String
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       User      @relation("CapasCreadas", fields: [createdById], references: [id])
+
+  @@index([origen, origenId, estado])
+}
